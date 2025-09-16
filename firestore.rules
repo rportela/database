@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userRecord() {
+      return isSignedIn() ? get(/databases/$(database)/documents/users/$(request.auth.uid)) : null;
+    }
+
+    function orgMembership(clientId) {
+      let user = userRecord();
+      return user != null && user.data.orgs != null && user.data.orgs[clientId] != null;
+    }
+
+    function orgRole(clientId) {
+      let user = userRecord();
+      return user != null && user.data.orgs != null && user.data.orgs[clientId] != null
+        ? user.data.orgs[clientId].role
+        : null;
+    }
+
+    function isOrgMember(clientId) {
+      return isSignedIn() && orgMembership(clientId);
+    }
+
+    function isOrgOwner(clientId) {
+      return isSignedIn() && orgRole(clientId) == "owner";
+    }
+
+    match /clients/{clientId} {
+      allow create: if isSignedIn() && request.resource.data.owner_user_id == request.auth.uid;
+      allow read, list: if isOrgMember(clientId);
+      allow update: if isOrgMember(clientId) &&
+        request.resource.data.owner_user_id == resource.data.owner_user_id;
+      allow delete: if isOrgOwner(clientId);
+
+      match /billing/{document=**} {
+        allow read, list, create, update, delete: if isOrgOwner(clientId);
+      }
+
+      match /members/{userId} {
+        allow get, list: if isOrgMember(clientId);
+        allow create, update, delete: if isOrgOwner(clientId);
+      }
+    }
+
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+      allow list: if false;
+    }
+  }
+}
