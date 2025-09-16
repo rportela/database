@@ -71,3 +71,17 @@ Enable secure login, per-client data isolation, and client metadata management.
 - Firebase Auth setup (email/password, Google OAuth).
 - Firestore structure and access patterns documented in `/docs/architecture/authentication-client-model.md`.
 - Firestore security rules (`firestore.rules`) enforcing per-client isolation and owner-only access to billing.
+
+## Phase 3 — Stripe Billing & Entitlements
+
+### Objective:
+Charge customers through Stripe, persist subscription state, and enforce plan
+limits within the API.
+
+### Deliverables:
+
+- Deterministic Stripe products/prices for Starter, Pro, Enterprise (`billing/stripe_catalog.py`).
+- React Checkout integration (`web/src/components/StripeCheckoutButton.tsx`).
+- Cloud Run webhook handler syncing Firestore entitlements (`src/webhooks/stripe.py`).
+- API helpers enforcing daily query/data caps (`src/api/entitlements.py`).
+- Architecture overview in `/docs/architecture/billing-entitlements.md`.
