@@ -27,6 +27,19 @@ variable "artifact_registry_repository_id" {
   default     = "analytics-services"
 }
 
+variable "google_oauth_client_id" {
+  description = "OAuth client ID used for enabling Google sign-in with Firebase Authentication. Leave blank to skip configuration."
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "OAuth client secret paired with google_oauth_client_id. Required when enabling Google sign-in."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "labels" {
   description = "Common labels applied to all managed resources."
   type        = map(string)

@@ -9,6 +9,7 @@ locals {
     "artifactregistry.googleapis.com",
     "run.googleapis.com",
     "firestore.googleapis.com",
+    "identitytoolkit.googleapis.com",
     "iam.googleapis.com",
     "cloudbuild.googleapis.com"
   ]
@@ -60,6 +61,36 @@ resource "google_service_account" "firestore" {
 resource "google_service_account" "stripe_webhook" {
   account_id   = "stripe-webhook"
   display_name = "Stripe webhook processor service account"
+}
+
+resource "google_identity_platform_config" "default" {
+  project = var.project_id
+
+  sign_in {
+    allow_email_link_sign_in = false
+
+    email {
+      enabled           = true
+      password_required = true
+    }
+  }
+
+  depends_on = [
+    google_project_service.services["identitytoolkit.googleapis.com"]
+  ]
+}
+
+resource "google_identity_platform_default_supported_idp_config" "google" {
+  count = var.google_oauth_client_id != "" && var.google_oauth_client_secret != "" ? 1 : 0
+
+  enabled       = true
+  idp_id        = "google.com"
+  client_id     = var.google_oauth_client_id
+  client_secret = var.google_oauth_client_secret
+
+  depends_on = [
+    google_identity_platform_config.default
+  ]
 }
 
 resource "google_project_iam_member" "cloud_run_roles" {

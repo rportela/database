@@ -15,8 +15,12 @@ cd infra/terraform
 terraform init -backend=false
 terraform plan \
   -var="project_id=<your-gcp-project>" \
-  -var="region=us-central1"
+  -var="region=us-central1" \
+  -var="google_oauth_client_id=<oauth-client-id>" \
+  -var="google_oauth_client_secret=<oauth-client-secret>"
 ```
+
+Leave the Google OAuth variables blank to provision only email/password sign-in. Provide credentials when you are ready to expose Google sign-in in the UI. The values should correspond to the OAuth client configured in the Google Cloud console for the frontend.
 
 The `bucket_prefix` variable defaults to the project ID. Override it when you need globally unique bucket names across multiple environments/projects.
 

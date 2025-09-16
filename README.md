@@ -69,5 +69,5 @@ Enable secure login, per-client data isolation, and client metadata management.
 ### Deliverables:
 
 - Firebase Auth setup (email/password, Google OAuth).
-
-- Firestore structure:
+- Firestore structure and access patterns documented in `/docs/architecture/authentication-client-model.md`.
+- Firestore security rules (`firestore.rules`) enforcing per-client isolation and owner-only access to billing.
