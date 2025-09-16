@@ -85,3 +85,16 @@ limits within the API.
 - Cloud Run webhook handler syncing Firestore entitlements (`src/webhooks/stripe.py`).
 - API helpers enforcing daily query/data caps (`src/api/entitlements.py`).
 - Architecture overview in `/docs/architecture/billing-entitlements.md`.
+
+## Phase 4 — Iceberg Catalog & Data Lifecycle
+
+### Objective:
+Bootstrap per-client Iceberg catalogs and manage table schemas across clouds.
+
+### Deliverables:
+
+- Configurable catalog configuration abstraction (`src/iceberg/config.py`).
+- Storage bootstrapper that materialises warehouse prefixes (`src/iceberg/storage.py`).
+- Catalog bootstrap orchestrator and default table bundle (`src/iceberg/bootstrap.py`, `src/iceberg/tables.py`).
+- Schema evolution helper for safe column additions (`src/iceberg/schema.py`).
+- Architecture notes in `/docs/architecture/iceberg-catalog-bootstrap.md`.
