@@ -1,0 +1,49 @@
+name: Build and Push Container Image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+env:
+  GAR_LOCATION: ${{ secrets.GAR_LOCATION }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  ARTIFACT_REPOSITORY: ${{ secrets.ARTIFACT_REPOSITORY }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+  IMAGE_BASE: ${{ secrets.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPOSITORY }}/${{ secrets.SERVICE_NAME }}
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_BUILD_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: docker build -t $IMAGE_BASE:$IMAGE_TAG .
+
+      - name: Push image
+        run: |
+          docker push $IMAGE_BASE:$IMAGE_TAG
+          docker tag $IMAGE_BASE:$IMAGE_TAG $IMAGE_BASE:latest
+          docker push $IMAGE_BASE:latest
