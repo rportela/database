@@ -1,0 +1,66 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  GAR_LOCATION: ${{ secrets.GAR_LOCATION }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  ARTIFACT_REPOSITORY: ${{ secrets.ARTIFACT_REPOSITORY }}
+  SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+  CLOUD_RUN_REGION: ${{ secrets.CLOUD_RUN_REGION }}
+  IMAGE: ${{ secrets.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPOSITORY }}/${{ secrets.SERVICE_NAME }}:${{ github.sha }}
+
+jobs:
+  deploy-staging:
+    name: Deploy to staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Deploy service
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ format('{0}-staging', secrets.SERVICE_NAME) }}
+          image: ${{ env.IMAGE }}
+          region: ${{ env.CLOUD_RUN_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account: ${{ secrets.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          allow_unauthenticated: true
+
+  deploy-production:
+    name: Deploy to production
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: production
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Deploy service
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ format('{0}-prod', secrets.SERVICE_NAME) }}
+          image: ${{ env.IMAGE }}
+          region: ${{ env.CLOUD_RUN_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account: ${{ secrets.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+          allow_unauthenticated: false
