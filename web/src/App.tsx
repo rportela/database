@@ -8,6 +8,7 @@ import { AppLayout } from "./layouts/AppLayout";
 import { BillingReturnPage } from "./pages/BillingReturnPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { QueryHistoryPage } from "./pages/QueryHistoryPage";
 
 function ProtectedRoute({ children }: { children: ReactElement }): JSX.Element {
   const { user, loading } = useAuth();
@@ -56,6 +57,16 @@ export function App(): JSX.Element {
               <ProtectedRoute>
                 <AppLayout>
                   <DashboardPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <QueryHistoryPage />
                 </AppLayout>
               </ProtectedRoute>
             }
