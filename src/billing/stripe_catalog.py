@@ -5,8 +5,14 @@ import logging
 import os
 from typing import Dict
 
-import stripe
-from stripe.error import InvalidRequestError
+import importlib.util
+
+if importlib.util.find_spec("stripe") is not None:  # pragma: no cover - optional dependency
+    import stripe  # type: ignore
+    from stripe.error import InvalidRequestError  # type: ignore
+else:  # pragma: no cover - fallback when Stripe SDK unavailable
+    stripe = None  # type: ignore
+    InvalidRequestError = Exception  # type: ignore
 
 from .models import PlanDefinition, PlanEntitlements
 
@@ -14,6 +20,8 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _require_stripe_api_key() -> str:
+    if stripe is None:
+        raise RuntimeError("The 'stripe' package is required for billing operations.")
     api_key = stripe.api_key or os.environ.get("STRIPE_API_KEY")
     if not api_key:
         raise RuntimeError("Stripe API key is not configured. Set STRIPE_API_KEY before calling billing helpers.")

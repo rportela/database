@@ -38,6 +38,9 @@ export interface QueryRequest {
   clientId: string;
   sql: string;
   limit?: number;
+  snapshotId?: string;
+  asOfTimestamp?: string;
+  estimatedScanMb?: number;
 }
 
 export interface QueryColumn {
@@ -52,6 +55,10 @@ export interface QueryStats {
   dataScannedMb?: number;
   row_count?: number;
   rowCount?: number;
+  snapshot_id?: string;
+  snapshotId?: string;
+  snapshot_timestamp?: string;
+  snapshotTimestamp?: string;
   [key: string]: unknown;
 }
 
@@ -72,6 +79,73 @@ export async function executeSqlQuery(request: QueryRequest): Promise<QueryRespo
       query: request.sql,
       sql: request.sql,
       limit: request.limit,
+      snapshot_id: request.snapshotId,
+      snapshotId: request.snapshotId,
+      as_of_timestamp: request.asOfTimestamp,
+      asOfTimestamp: request.asOfTimestamp,
+      estimated_scan_mb: request.estimatedScanMb,
+      estimatedScanMb: request.estimatedScanMb,
     }),
   });
+}
+
+export interface QueryHistoryEntryResponse {
+  queryId: string;
+  clientId: string;
+  statement: string;
+  status: string;
+  submittedAt: string;
+  completedAt?: string | null;
+  elapsedMs?: number | null;
+  dataScannedMb?: number | null;
+  rowCount?: number | null;
+  costUsd?: number | null;
+  errorMessage?: string | null;
+  tables?: string[];
+  snapshotId?: string | null;
+  asOfTimestamp?: string | null;
+}
+
+export interface QueryHistorySummaryResponse {
+  totalQueries: number;
+  failedQueries: number;
+  totalCostUsd: number;
+  range?: {
+    start?: string | null;
+    end?: string | null;
+  };
+}
+
+export interface QueryHistoryResponsePayload {
+  entries: QueryHistoryEntryResponse[];
+  summary: QueryHistorySummaryResponse;
+}
+
+export interface QueryHistoryRequestParams {
+  start?: string;
+  end?: string;
+  table?: string;
+  limit?: number;
+}
+
+export async function fetchQueryHistory(
+  clientId: string,
+  params: QueryHistoryRequestParams,
+): Promise<QueryHistoryResponsePayload> {
+  const search = new URLSearchParams();
+  if (params.start) {
+    search.set("start", params.start);
+  }
+  if (params.end) {
+    search.set("end", params.end);
+  }
+  if (params.table) {
+    search.set("table", params.table);
+  }
+  if (params.limit) {
+    search.set("limit", String(params.limit));
+  }
+  const queryString = search.toString();
+  const path = `/api/clients/${encodeURIComponent(clientId)}/query-history${queryString ? `?${queryString}` : ""}`;
+  return apiRequest<QueryHistoryResponsePayload>(path, { method: "GET" });
 }

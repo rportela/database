@@ -1,15 +1,37 @@
 """Firestore backed entitlement enforcement used by the API layer."""
 from __future__ import annotations
 
+import importlib.util
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Generator, Optional
 
-from google.cloud import firestore
+if importlib.util.find_spec("google.cloud.firestore") is not None:  # pragma: no cover - optional dependency
+    from google.cloud import firestore  # type: ignore
+else:  # pragma: no cover - fallback used in tests without firestore dependency
+    class _StubTransaction:  # pylint: disable=too-few-public-methods
+        pass
+
+    class _StubClient:  # pylint: disable=too-few-public-methods
+        def __init__(self, *args, **kwargs) -> None:  # noqa: ANN001
+            raise RuntimeError("The 'google-cloud-firestore' package is required to use EntitlementService.")
+
+    def _transactional(func):  # type: ignore
+        return func
+
+    class _FirestoreModule:
+        SERVER_TIMESTAMP = object()
+        Client = _StubClient
+        Transaction = _StubTransaction
+
+        @staticmethod
+        def transactional(func):  # type: ignore
+            return func
+
+    firestore = _FirestoreModule()  # type: ignore
 
 from billing.models import PlanEntitlements
-from billing.stripe_catalog import get_plan_by_id
 
 
 @dataclass(frozen=True)
@@ -46,6 +68,8 @@ class EntitlementService:
         plan_id = data.get("plan_id")
         if not plan_id:
             raise EntitlementError(f"Client {client_id} does not have a plan assigned")
+        from billing.stripe_catalog import get_plan_by_id  # imported lazily to avoid optional dependency at import time
+
         plan = get_plan_by_id(plan_id)
         return plan.entitlements
 
