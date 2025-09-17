@@ -1,18 +1,24 @@
 """Helpers for creating Stripe Checkout and Billing Portal sessions."""
 from __future__ import annotations
 
+import importlib.util
 import logging
 import os
-from typing import Optional
+from typing import Any, Optional
 
-import stripe
+if importlib.util.find_spec("stripe") is not None:  # pragma: no cover - optional dependency
+    import stripe  # type: ignore
+else:  # pragma: no cover - fallback for environments without Stripe SDK
+    stripe = None  # type: ignore
 
-from .stripe_catalog import get_plan_by_id, PLAN_CATALOG
+from .stripe_catalog import PLAN_CATALOG, get_plan_by_id
 
 LOGGER = logging.getLogger(__name__)
 
 
 def _require_stripe_api_key() -> str:
+    if stripe is None:
+        raise RuntimeError("The 'stripe' package is required for billing operations.")
     api_key = stripe.api_key or os.environ.get("STRIPE_API_KEY")
     if not api_key:
         raise RuntimeError("Stripe API key is not configured. Set STRIPE_API_KEY before calling billing helpers.")
@@ -28,7 +34,7 @@ def create_checkout_session(
     cancel_url: str,
     customer_id: Optional[str] = None,
     trial_period_days: Optional[int] = None,
-) -> stripe.checkout.Session:
+) -> Any:
     """Create a Stripe Checkout session for the requested plan."""
 
     _require_stripe_api_key()
@@ -74,7 +80,7 @@ def create_checkout_session(
     return session
 
 
-def create_billing_portal_session(*, customer_id: str, return_url: str) -> stripe.billing_portal.Session:
+def create_billing_portal_session(*, customer_id: str, return_url: str) -> Any:
     """Create a session for the hosted Stripe Billing Portal."""
 
     _require_stripe_api_key()

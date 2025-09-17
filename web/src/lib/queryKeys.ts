@@ -1,5 +1,6 @@
 export const queryKeys = {
   clientProfile: (clientId: string) => ["clientProfile", clientId] as const,
   usageHistory: (clientId: string) => ["usageHistory", clientId] as const,
+  queryHistory: (clientId: string) => ["queryHistory", clientId] as const,
   planCatalog: ["planCatalog"] as const,
 };

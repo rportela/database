@@ -1,0 +1,36 @@
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  opacity: 0.9;
+}
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-translucent);
+  border: 1px solid var(--color-border-subtle);
+  min-height: 3rem;
+}
+
+.logoWrapper img {
+  max-height: 28px;
+  width: auto;
+  filter: grayscale(100%);
+  opacity: 0.9;
+}
+
+@media (max-width: 640px) {
+  .row {
+    justify-content: flex-start;
+  }
+
+  .logoWrapper {
+    padding: var(--space-xs) var(--space-md);
+  }
+}
