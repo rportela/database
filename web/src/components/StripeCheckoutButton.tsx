@@ -6,7 +6,7 @@ import { createCheckoutSession } from "../lib/billingClient";
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 const stripePromise = publishableKey ? loadStripe(publishableKey) : Promise.resolve(null);
 
-type PlanId = "starter" | "pro" | "enterprise";
+type PlanId = string;
 
 type StripeCheckoutButtonProps = {
   planId: PlanId;
@@ -15,6 +15,7 @@ type StripeCheckoutButtonProps = {
   successUrl: string;
   cancelUrl: string;
   className?: string;
+  label?: string;
 };
 
 export function StripeCheckoutButton({
@@ -24,6 +25,7 @@ export function StripeCheckoutButton({
   successUrl,
   cancelUrl,
   className,
+  label,
 }: StripeCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,17 +68,14 @@ export function StripeCheckoutButton({
     }
   }, [planId, clientId, customerId, successUrl, cancelUrl]);
 
+  const buttonLabel = label ?? "Upgrade with Stripe";
+
   return (
     <div className={className}>
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={loading}
-        className="rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-      >
-        {loading ? "Redirecting…" : "Upgrade with Stripe"}
+      <button type="button" onClick={handleClick} disabled={loading} className="btn btn-primary">
+        {loading ? "Redirecting…" : buttonLabel}
       </button>
-      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="error-text">{error}</p> : null}
     </div>
   );
 }
