@@ -1,7 +1,8 @@
-import type { ReactElement } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Route, Routes } from "react-router-dom";
 
 import { LoadingScreen } from "./components/LoadingScreen";
+import { HomePage } from "./pages/HomePage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ClientProvider } from "./context/ClientContext";
 import { AppLayout } from "./layouts/AppLayout";
@@ -10,24 +11,21 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { QueryHistoryPage } from "./pages/QueryHistoryPage";
 
-function ProtectedRoute({ children }: { children: ReactElement }): JSX.Element {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return <LoadingScreen message="Checking authentication…" />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  return children;
-}
+const AuthenticatedApp = lazy(() => import("./AuthenticatedApp"));
 
 export function App(): JSX.Element {
   return (
-    <AuthProvider>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route
+        path="/*"
+        element={
+          <Suspense fallback={<LoadingScreen message="Loading application…" />}>
+            <AuthenticatedApp />
+          </Suspense>
+        }
+      />
+      <AuthProvider>
       <ClientProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -75,6 +73,7 @@ export function App(): JSX.Element {
         </Routes>
       </ClientProvider>
     </AuthProvider>
+    </Routes>
   );
 }
 
