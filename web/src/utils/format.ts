@@ -4,6 +4,12 @@ type DateInput = Date | string | number | null | undefined;
 
 const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const decimalFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const currencyFormatter = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
 
 const toDate = (value: DateInput): Date | null => {
   if (value instanceof Date) {
@@ -54,6 +60,21 @@ export const formatScanVolume = (value: number | null | undefined): string => {
     return `${decimalFormatter.format(value / 1024)} GB`;
   }
   return `${decimalFormatter.format(value)} MB`;
+};
+
+export const formatCurrency = (value: number | null | undefined, currency: string = "USD"): string => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "—";
+  }
+  if (currency !== "USD") {
+    const dynamicFormatter = new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    });
+    return dynamicFormatter.format(value);
+  }
+  return currencyFormatter.format(value);
 };
 
 export const formatDateLabel = (

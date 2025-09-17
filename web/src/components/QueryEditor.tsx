@@ -18,6 +18,8 @@ interface QueryEditorProps {
 
 export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
   const [sql, setSql] = useState<string>(DEFAULT_QUERY);
+  const [snapshotId, setSnapshotId] = useState<string>("");
+  const [asOfTimestamp, setAsOfTimestamp] = useState<string>("");
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Awaited<ReturnType<typeof executeSqlQuery>> | null>(null);
@@ -33,13 +35,21 @@ export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
       setIsRunning(true);
       setError(null);
       try {
-        const response = await executeSqlQuery({ clientId, sql });
+        const response = await executeSqlQuery({
+          clientId,
+          sql,
+          snapshotId: snapshotId.trim() || undefined,
+          asOfTimestamp: asOfTimestamp ? new Date(asOfTimestamp).toISOString() : undefined,
+        });
         if (response.error) {
           setError(response.error);
           setResult(null);
         } else {
           setResult(response);
           queryClient.invalidateQueries({ queryKey: queryKeys.usageHistory(clientId) }).catch(() => {
+            /* ignore */
+          });
+          queryClient.invalidateQueries({ queryKey: queryKeys.queryHistory(clientId) }).catch(() => {
             /* ignore */
           });
         }
@@ -54,7 +64,7 @@ export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
         setIsRunning(false);
       }
     },
-    [clientId, queryClient, sql],
+    [asOfTimestamp, clientId, queryClient, snapshotId, sql],
   );
 
   const stats = useMemo(() => {
@@ -65,10 +75,14 @@ export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
     const elapsedMs = result.stats?.elapsed_ms ?? result.stats?.elapsedMs;
     const rowCount =
       result.stats?.row_count ?? result.stats?.rowCount ?? (Array.isArray(result.rows) ? result.rows.length : undefined);
+    const snapshot = result.stats?.snapshot_id ?? result.stats?.snapshotId;
+    const snapshotTime = result.stats?.snapshot_timestamp ?? result.stats?.snapshotTimestamp;
     return {
       dataScannedMb,
       elapsedMs,
       rowCount,
+      snapshot,
+      snapshotTime,
     };
   }, [result]);
 
@@ -87,6 +101,27 @@ export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
           onChange={(event) => setSql(event.target.value)}
           placeholder="SELECT * FROM analytics.daily_usage ORDER BY event_date DESC LIMIT 50;"
         />
+        <div className="time-travel-grid">
+          <label className="field">
+            <span>Snapshot ID</span>
+            <input
+              className="text-input"
+              value={snapshotId}
+              onChange={(event) => setSnapshotId(event.target.value)}
+              placeholder="e.g. 1765432198765"
+            />
+          </label>
+          <label className="field">
+            <span>As of timestamp</span>
+            <input
+              className="text-input"
+              type="datetime-local"
+              value={asOfTimestamp}
+              onChange={(event) => setAsOfTimestamp(event.target.value)}
+            />
+          </label>
+        </div>
+        <small className="helper">Specify a snapshot or timestamp to time-travel queries against historical snapshots.</small>
         <div className="query-actions">
           <button type="submit" className="btn btn-primary" disabled={isRunning}>
             {isRunning ? "Running query…" : "Run query"}
@@ -111,6 +146,8 @@ export function QueryEditor({ clientId }: QueryEditorProps): JSX.Element {
               {stats.elapsedMs !== undefined ? <span>Elapsed: {formatDecimal(stats.elapsedMs / 1000, 2)}s</span> : null}
               {stats.dataScannedMb !== undefined ? <span>Data scanned: {formatDecimal(stats.dataScannedMb, 2)} MB</span> : null}
               {stats.rowCount !== undefined ? <span>Rows: {formatInteger(stats.rowCount)}</span> : null}
+              {stats.snapshot ? <span>Snapshot: {stats.snapshot}</span> : null}
+              {stats.snapshotTime ? <span>Snapshot time: {new Date(stats.snapshotTime).toLocaleString()}</span> : null}
             </div>
           ) : null}
           <QueryResultTable result={result} />
