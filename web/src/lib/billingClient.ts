@@ -1,3 +1,5 @@
+import { apiRequest } from "./apiClient";
+
 export interface CheckoutSessionRequest {
   clientId: string;
   planId: string;
@@ -13,11 +15,8 @@ export interface CheckoutSessionResponse {
 export async function createCheckoutSession(
   request: CheckoutSessionRequest,
 ): Promise<CheckoutSessionResponse> {
-  const response = await fetch("/api/billing/checkout-session", {
+  return apiRequest<CheckoutSessionResponse>("/api/billing/checkout-session", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
       clientId: request.clientId,
       planId: request.planId,
@@ -25,15 +24,7 @@ export async function createCheckoutSession(
       cancelUrl: request.cancelUrl,
       customerId: request.customerId,
     }),
-    credentials: "include",
   });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`Failed to create checkout session: ${message}`);
-  }
-
-  return (await response.json()) as CheckoutSessionResponse;
 }
 
 export interface BillingPortalRequest {
@@ -48,19 +39,16 @@ export interface BillingPortalResponse {
 export async function createBillingPortalSession(
   request: BillingPortalRequest,
 ): Promise<BillingPortalResponse> {
-  const response = await fetch("/api/billing/portal-session", {
+  return apiRequest<BillingPortalResponse>("/api/billing/portal-session", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(request),
-    credentials: "include",
   });
+}
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`Failed to create billing portal session: ${message}`);
-  }
+export type PlanCatalogResponse = Record<string, string>;
 
-  return (await response.json()) as BillingPortalResponse;
+export async function fetchPlanCatalog(): Promise<PlanCatalogResponse> {
+  return apiRequest<PlanCatalogResponse>("/api/billing/plans", {
+    method: "GET",
+  });
 }

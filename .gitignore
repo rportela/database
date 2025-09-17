@@ -5,3 +5,6 @@ terraform.tfstate*
 .idea/
 .vscode/
 .env
+node_modules/
+web/node_modules/
+web/dist/
